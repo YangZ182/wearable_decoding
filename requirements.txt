@@ -1,0 +1,7 @@
+numpy
+pandas
+plotly
+protobuf<7
+scikit-learn
+streamlit
+torch

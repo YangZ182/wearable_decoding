@@ -1,0 +1,6 @@
+{
+  "run_name": "cnn1d_baseline",
+  "prediction_run_id": "20260911T053837Z",
+  "contains_checkpoint": false,
+  "note": "This baseline keeps the prediction artifact used by outputs/human_feedback/error_review_annotations.csv. Re-training writes to cnn1d_retrain_<timestamp> folders."
+}
