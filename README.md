@@ -31,6 +31,13 @@ python -m pip install -r requirements.txt
 streamlit run human_feedback/app.py
 ```
 
+如果你在 Anaconda `base` 环境里遇到 NumPy 2.x 与旧编译包冲突，建议用下面的方式启动，避免读取用户目录里的 Python 包：
+
+```powershell
+$env:PYTHONNOUSERSITE="1"
+python -m streamlit run human_feedback/app.py
+```
+
 打开页面后，可以点击混淆矩阵中的任意类别组合，查看对应测试样本的 9 通道时序信号；多个类别组合可以同时保留比较。错误分类样本下方可以保存人工审阅标签和备注。
 
 ## 重新训练模型

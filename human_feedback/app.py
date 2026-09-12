@@ -200,7 +200,7 @@ def render_confusion_button_grid():
                     key=f"cm_btn_{truth_id}_{prediction_id}",
                     help=f"真实: {truth_name} | 预测: {prediction_name}",
                     type=button_type,
-                    width="stretch",
+                    use_container_width=True,
                 ):
                     if cell not in st.session_state["selected_confusion_cells"]:
                         st.session_state["selected_confusion_cells"].append(cell)
@@ -288,7 +288,7 @@ def render_sample_card(selected_cell):
                 groups,
                 y_ranges,
             ),
-            width="stretch",
+            use_container_width=True,
             key=f"sample_signal_{cell_key}_{current_test_index}",
         )
 
