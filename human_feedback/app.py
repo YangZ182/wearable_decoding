@@ -150,7 +150,7 @@ per_class_table = pd.DataFrame(metrics["per_class"]).rename(
 centered_table(per_class_table)
 
 st.subheader("可点击混淆矩阵")
-st.caption("纵轴是真实类别 Truth，横轴是预测类别 Prediction。点击任意圆角卡片即可下钻样本。")
+st.caption("纵轴是真实类别 Truth，横轴是预测类别 Prediction。色块显示样本数量，点击“查看”下钻样本。")
 
 
 def render_confusion_button_grid():
@@ -170,39 +170,29 @@ def render_confusion_button_grid():
             text_color = "#ffffff" if count / max_count > 0.55 else "#0f172a"
             selected = cell in st.session_state["selected_confusion_cells"]
             border = "#f97316" if selected else "rgba(15, 23, 42, 0.08)"
-            button_type = "primary"
-            marker_id = f"cm_cell_{truth_id}_{prediction_id}"
+            button_type = "primary" if selected else "secondary"
 
             with row_columns[prediction_id + 1]:
                 st.markdown(
                     f"""
-                    <style>
-                    div[data-testid="element-container"]:has(#{marker_id}) {{
-                        display: none;
-                    }}
-                    div[data-testid="element-container"]:has(#{marker_id})
-                    + div[data-testid="element-container"] button {{
-                        min-height: 64px;
-                        border-radius: 8px;
-                        border: 2px solid {border};
-                        background: {color}!important;
-                        color: {text_color}!important;
-                        font-size: 1.1rem;
-                        font-weight: 750;
-                    }}
-                    div[data-testid="element-container"]:has(#{marker_id})
-                    + div[data-testid="element-container"] button:hover {{
-                        border-color: #f97316!important;
-                        background: {color}!important;
-                        color: {text_color}!important;
-                    }}
-                    </style>
-                    <span id="{marker_id}"></span>
+                    <div style="
+                        min-height:64px;
+                        border-radius:8px;
+                        border:2px solid {border};
+                        background:{color};
+                        color:{text_color};
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:1.1rem;
+                        font-weight:750;
+                        margin-bottom:0.2rem;
+                    ">{count}</div>
                     """,
                     unsafe_allow_html=True,
                 )
                 if st.button(
-                    str(count),
+                    "查看",
                     key=f"cm_btn_{truth_id}_{prediction_id}",
                     help=f"真实: {truth_name} | 预测: {prediction_name}",
                     type=button_type,
