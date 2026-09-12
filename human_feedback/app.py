@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -58,6 +59,38 @@ def color_legend_html(max_count):
         </div>
     </div>
     """
+
+
+def review_label_bar_chart(label_summary):
+    figure = go.Figure(
+        go.Bar(
+            x=label_summary["review_label"],
+            y=label_summary["count"],
+            marker_color="#0C54AC",
+            width=0.4,
+        )
+    )
+    figure.update_layout(
+        height=320,
+        margin={"l": 40, "r": 20, "t": 20, "b": 60},
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        xaxis_title=None,
+        yaxis_title="数量",
+        shapes=[
+            {
+                "type": "rect",
+                "xref": "paper",
+                "yref": "paper",
+                "x0": 0,
+                "y0": 0,
+                "x1": 1,
+                "y1": 1,
+                "line": {"color": "#e5e7eb", "width": 1},
+            }
+        ],
+    )
+    return figure
 
 
 def rerun_app():
@@ -378,8 +411,9 @@ else:
             columns={"review_label": "审阅标签", "count": "数量", "proportion": "比例"}
         )
     )
-    st.bar_chart(
-        summaries["label_summary"].set_index("review_label")["count"],
+    st.plotly_chart(
+        review_label_bar_chart(summaries["label_summary"]),
+        use_container_width=True,
     )
 
     st.markdown("**按混淆类别对统计审阅标签**")
