@@ -150,7 +150,7 @@ per_class_table = pd.DataFrame(metrics["per_class"]).rename(
 centered_table(per_class_table)
 
 st.subheader("可点击混淆矩阵")
-st.caption("纵轴是真实类别 Truth，横轴是预测类别 Prediction。色块显示样本数量，点击“查看”下钻样本。")
+st.caption("纵轴是真实类别 Truth，横轴是预测类别 Prediction。点击任意圆角色块即可下钻样本。")
 
 
 def render_confusion_button_grid():
@@ -170,38 +170,42 @@ def render_confusion_button_grid():
             text_color = "#ffffff" if count / max_count > 0.55 else "#0f172a"
             selected = cell in st.session_state["selected_confusion_cells"]
             border = "#f97316" if selected else "rgba(15, 23, 42, 0.08)"
-            button_type = "primary" if selected else "secondary"
+            wrapper_key = f"cm_cell_{truth_id}_{prediction_id}"
 
             with row_columns[prediction_id + 1]:
                 st.markdown(
                     f"""
-                    <div style="
+                    <style>
+                    .st-key-{wrapper_key} button {{
                         min-height:64px;
                         border-radius:8px;
-                        border:2px solid {border};
-                        background:{color};
-                        color:{text_color};
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        font-size:1.1rem;
-                        font-weight:750;
-                        margin-bottom:0.2rem;
-                    ">{count}</div>
+                        border:2px solid {border}!important;
+                        background:{color}!important;
+                    }}
+                    .st-key-{wrapper_key} button:hover {{
+                        border-color:#f97316!important;
+                        background:{color}!important;
+                    }}
+                    .st-key-{wrapper_key} button * {{
+                        color:{text_color}!important;
+                        font-size:1.1rem!important;
+                        font-weight:750!important;
+                    }}
+                    </style>
                     """,
                     unsafe_allow_html=True,
                 )
-                if st.button(
-                    "查看",
-                    key=f"cm_btn_{truth_id}_{prediction_id}",
-                    help=f"真实: {truth_name} | 预测: {prediction_name}",
-                    type=button_type,
-                    use_container_width=True,
-                ):
-                    if cell not in st.session_state["selected_confusion_cells"]:
-                        st.session_state["selected_confusion_cells"].append(cell)
-                    st.session_state.setdefault(f"sample_cursor_{truth_id}_{prediction_id}", 0)
-                    rerun_app()
+                with st.container(key=wrapper_key):
+                    if st.button(
+                        str(count),
+                        key=f"cm_btn_{truth_id}_{prediction_id}",
+                        help=f"真实: {truth_name} | 预测: {prediction_name}",
+                        use_container_width=True,
+                    ):
+                        if cell not in st.session_state["selected_confusion_cells"]:
+                            st.session_state["selected_confusion_cells"].append(cell)
+                        st.session_state.setdefault(f"sample_cursor_{truth_id}_{prediction_id}", 0)
+                        rerun_app()
 
 
 matrix_column, legend_column = st.columns([8, 1], gap="medium")
