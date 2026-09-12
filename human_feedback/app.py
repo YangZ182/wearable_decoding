@@ -170,7 +170,7 @@ def render_confusion_button_grid():
             text_color = "#ffffff" if count / max_count > 0.55 else "#0f172a"
             selected = cell in st.session_state["selected_confusion_cells"]
             border = "#f97316" if selected else "rgba(15, 23, 42, 0.08)"
-            button_type = "primary" if selected else "secondary"
+            button_type = "primary"
             marker_id = f"cm_cell_{truth_id}_{prediction_id}"
 
             with row_columns[prediction_id + 1]:
