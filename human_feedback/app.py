@@ -167,8 +167,6 @@ def render_confusion_button_grid():
             count = int(confusion_matrix[truth_id, prediction_id])
             cell = (truth_id, prediction_id)
             color = matrix_cell_color(count, max_count)
-            if truth_id == 0 and prediction_id == 0:
-                st.write(color)
             text_color = "#ffffff" if count / max_count > 0.55 else "#0f172a"
             selected = cell in st.session_state["selected_confusion_cells"]
             border = "#f97316" if selected else "rgba(15, 23, 42, 0.08)"
