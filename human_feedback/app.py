@@ -185,16 +185,16 @@ def render_confusion_button_grid():
                         min-height: 64px;
                         border-radius: 8px;
                         border: 2px solid {border};
-                        background: {color};
-                        color: {text_color};
+                        background: {color}!important;
+                        color: {text_color}!important;
                         font-size: 1.1rem;
                         font-weight: 750;
                     }}
                     div[data-testid="element-container"]:has(#{marker_id})
                     + div[data-testid="element-container"] button:hover {{
-                        border-color: #f97316;
-                        background: {color};
-                        color: {text_color};
+                        border-color: #f97316!important;
+                        background: {color}!important;
+                        color: {text_color}!important;
                     }}
                     </style>
                     <span id="{marker_id}"></span>
