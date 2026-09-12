@@ -16,7 +16,14 @@ from data_utils import (
     prediction_confidence,
     validate_prediction_order,
 )
-from review_utils import REVIEW_LABELS, load_reviews, review_for_sample, reviewed_error_summary, save_review
+from review_utils import (
+    REVIEW_LABELS,
+    load_reviews,
+    review_for_sample,
+    reviewed_error_summary,
+    save_review,
+    upsert_review,
+)
 from visualization import matrix_cell_color, group_y_ranges, sample_signal_figure, signal_groups
 
 
@@ -93,6 +100,21 @@ def test_signal_plot_helpers():
 def test_review_upsert():
     with tempfile.TemporaryDirectory() as temp_dir:
         review_path = Path(temp_dir) / "reviews.csv"
+
+        baseline = load_reviews(review_path)
+        session_reviews = upsert_review(
+            baseline,
+            prediction_run_id="run-1",
+            test_index=31,
+            truth="SITTING",
+            prediction="STANDING",
+            confidence=0.77,
+            review_label=REVIEW_LABELS[0],
+            review_note="session note",
+        )
+        assert baseline.empty
+        assert len(session_reviews) == 1
+        assert not review_path.exists()
 
         save_review(
             review_path,

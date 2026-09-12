@@ -70,7 +70,31 @@ def save_review(
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    reviews = load_reviews(path)
+    reviews = upsert_review(
+        load_reviews(path),
+        prediction_run_id,
+        test_index,
+        truth,
+        prediction,
+        confidence,
+        review_label,
+        review_note,
+    )
+    reviews.to_csv(path, index=False)
+
+    return reviews
+
+
+def upsert_review(
+    reviews,
+    prediction_run_id,
+    test_index,
+    truth,
+    prediction,
+    confidence,
+    review_label,
+    review_note,
+):
     row = {
         "prediction_run_id": prediction_run_id,
         "test_index": int(test_index),
@@ -83,10 +107,7 @@ def save_review(
 
     keep = reviews["test_index"].astype(str) != str(test_index)
     new_row = pd.DataFrame([row], columns=REVIEW_COLUMNS)
-    reviews = new_row if reviews[keep].empty else pd.concat([reviews[keep], new_row], ignore_index=True)
-    reviews.to_csv(path, index=False)
-
-    return reviews
+    return new_row if reviews[keep].empty else pd.concat([reviews[keep], new_row], ignore_index=True)
 
 
 def reviewed_error_summary(reviews):

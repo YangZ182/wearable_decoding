@@ -24,7 +24,7 @@ from review_utils import (
     load_reviews,
     review_for_sample,
     reviewed_error_summary,
-    save_review,
+    upsert_review,
 )
 from visualization import matrix_cell_color, group_y_ranges, sample_signal_figure, signal_groups
 
@@ -105,9 +105,13 @@ if not PREDICTION_ARTIFACT.exists():
     )
     st.stop()
 
-class_names = load_activity_labels()
-x_test = load_test_signals()
-predictions = load_prediction_artifact()
+
+@st.cache_data(show_spinner="正在加载测试数据……")
+def load_demo_data():
+    return load_activity_labels(), load_test_signals(), load_prediction_artifact()
+
+
+class_names, x_test, predictions = load_demo_data()
 validate_prediction_order(predictions, x_test)
 
 y_true = predictions["y_true"].astype(int)
@@ -119,10 +123,12 @@ metrics = overall_metrics(y_true, y_pred, class_names)
 confusion_matrix = confusion_matrix_counts(y_true, y_pred, len(class_names))
 groups = signal_groups(CHANNEL_NAMES)
 y_ranges = group_y_ranges(x_test, groups)
-reviews = load_reviews(REVIEW_CSV)
 total_error_count = int((y_true != y_pred).sum())
 
 st.session_state.setdefault("selected_confusion_cells", [])
+if "reviews" not in st.session_state:
+    st.session_state["reviews"] = load_reviews(REVIEW_CSV)
+reviews = st.session_state["reviews"]
 
 st.subheader("整体模型评估")
 
@@ -318,8 +324,8 @@ def render_sample_card(selected_cell):
                     key=f"review_note_{cell_key}_{current_test_index}",
                 )
                 if st.form_submit_button("保存审阅"):
-                    reviews = save_review(
-                        REVIEW_CSV,
+                    reviews = upsert_review(
+                        reviews,
                         prediction_run_id,
                         current_test_index,
                         truth_name,
@@ -328,6 +334,7 @@ def render_sample_card(selected_cell):
                         review_label,
                         review_note,
                     )
+                    st.session_state["reviews"] = reviews
                     review_saved = True
             if review_saved:
                 st.success("已审阅")
@@ -349,6 +356,15 @@ elif len(selected_cells) > 1:
 st.subheader("人工审阅错误汇总")
 st.caption(
     "这里只统计已经人工保存的错误样本审阅结果。人工审阅标签是描述性记录，不代表因果结论。"
+    "新增审阅仅保存在当前页面会话，刷新、断线或关闭页面前请先下载 CSV；"
+    "仓库中的 baseline 不会被修改。"
+)
+
+st.download_button(
+    "下载当前审阅 CSV",
+    data=reviews.to_csv(index=False).encode("utf-8-sig"),
+    file_name="error_review_annotations.csv",
+    mime="text/csv",
 )
 
 summaries = reviewed_error_summary(reviews)

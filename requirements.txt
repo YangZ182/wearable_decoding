@@ -1,7 +1,5 @@
-numpy<2
-pandas
-plotly
-protobuf<7
-scikit-learn
-streamlit
-torch
+numpy==1.26.4
+pandas==2.2.2
+plotly==5.24.1
+protobuf==4.25.3
+streamlit==1.37.1
