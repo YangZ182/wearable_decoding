@@ -6,10 +6,11 @@
 
 ```text
 data/                         # UCI HAR 原始数据
-src/                          # 1D CNN 训练代码
+src/                          # 1D CNN 训练与离线评估代码
 human_feedback/               # Streamlit 交互式诊断工具
 outputs/training_runs/         # 训练与测试阶段输出
 outputs/human_feedback/        # 人工审阅结果
+outputs/axis_permutation_stress_test/ # 六种轴排列的离线评估结果
 tests/                        # 简单自检
 ```
 
@@ -37,7 +38,7 @@ $env:PYTHONNOUSERSITE="1"
 
 打开页面后，可以点击混淆矩阵中的任意类别组合，查看对应测试样本的 9 通道时序信号；多个类别组合可以同时保留比较。错误分类样本下方可以保存人工审阅标签和备注。
 
-底部 `Axis Permutation Stress Test` 可选择排列并点击 `Evaluate Selected` 查看对照，或点击 `Evaluate All` 预览全部离线指标和静态混淆矩阵；Original 用浅蓝色块和加粗文字突出。切换排列后重新点击查看按钮。
+底部“更改测试集坐标轴”可选择排列并点击 `Evaluate Selected` 查看对照，或点击 `Evaluate All` 预览全部离线指标和静态混淆矩阵；Original 用浅蓝色块和加粗文字突出。切换排列后重新点击查看按钮，页面只展示保存的结果，不实时推理。
 
 ## 部署到 Streamlit Community Cloud
 
