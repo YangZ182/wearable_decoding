@@ -56,11 +56,17 @@ https://wearable-decoding.streamlit.app
 
 ## 重新训练模型
 
-如需重新生成训练输出、测试集预测和模型 checkpoint：
+训练按受试者从原训练集固定划分验证集（split seed 42），按验证集 Macro-F1 保存最佳 checkpoint；训练期间不读取测试集。本机训练解释器是 `C:\Users\win11\.conda\envs\wearable\python.exe`，使用 CPU：
 
-```bash
-python -m pip install -r requirements-training.txt
-python src/train_cnn1d.py
+```powershell
+& C:/Users/win11/.conda/envs/wearable/python.exe -s -m pip install -r requirements-training.txt
+& C:/Users/win11/.conda/envs/wearable/python.exe -s -B -X utf8 src/train_cnn1d.py --epochs 30 --depth 3
+```
+
+可选参数包括 `--depth 2/3`、`--scheduler`（验证 loss 停滞后学习率减半）、`--weight-decay` 和训练随机种子 `--seed`。本次按验证集选定三层、30 轮、固定学习率、无 weight decay，最佳 checkpoint 在第 29 轮；测试 Accuracy 89.79%、Macro-F1 89.71%。实验记录保存在 `outputs/training_runs/optimization_summary_20260918.json`。单独评估这份 checkpoint：
+
+```powershell
+& C:/Users/win11/.conda/envs/wearable/python.exe -s -B -X utf8 src/train_cnn1d.py --evaluate-checkpoint outputs/training_runs/cnn1d_retrain_20260918T082938099944Z/model_state_dict.pt
 ```
 
 训练输出会保存到新的时间戳目录，不会覆盖当前交互工具默认读取的 baseline 结果：
@@ -73,10 +79,17 @@ outputs/training_runs/cnn1d_retrain_<timestamp>/
 
 ```text
 training_log.csv
+run_info.json
+validation_predictions.npz
+model_state_dict.pt
+```
+
+单独评估测试集后，在同一 run 目录增加：
+
+```text
 confusion_matrix.csv
 metrics.json
 cnn1d_test_predictions.npz
-model_state_dict.pt
 ```
 
 ## 人工反馈输出
