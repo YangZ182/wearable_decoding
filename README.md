@@ -26,14 +26,18 @@ python -m pip install -r requirements.txt
 python -m streamlit run human_feedback/app.py
 ```
 
-仓库已包含一份与当前人工反馈匹配的 baseline 测试集预测结果，因此不需要重新训练。当前 Windows + Anaconda `base` 环境已用 Python 3.12.7 验证；这台电脑需要在启动前忽略用户目录里冲突的 Python 包：
+仓库已包含一份与当前人工反馈匹配的 baseline 测试集预测结果，因此不需要重新训练。本机 UI 使用 Anaconda Python 3.12.7 创建的项目 `.venv`（Streamlit 1.49.0）验证；继承本机已有依赖，避免系统 base 的写权限限制：
 
 ```powershell
 $env:PYTHONNOUSERSITE="1"
-python -m streamlit run human_feedback/app.py
+& C:/ProgramData/anaconda3/python.exe -s -m venv --system-site-packages .venv
+& ./.venv/Scripts/python.exe -s -m pip install --no-deps streamlit==1.49.0
+& ./.venv/Scripts/python.exe -s -B -X utf8 -m streamlit run human_feedback/app.py --server.address 127.0.0.1 --server.port 8502 --server.headless true --browser.gatherUsageStats false
 ```
 
 打开页面后，可以点击混淆矩阵中的任意类别组合，查看对应测试样本的 9 通道时序信号；多个类别组合可以同时保留比较。错误分类样本下方可以保存人工审阅标签和备注。
+
+底部 `Axis Permutation Stress Test` 可选择排列并点击 `Evaluate Selected` 查看对照，或点击 `Evaluate All` 预览全部离线指标和静态混淆矩阵；Original 用浅蓝色块和加粗文字突出。切换排列后重新点击查看按钮。
 
 ## 部署到 Streamlit Community Cloud
 

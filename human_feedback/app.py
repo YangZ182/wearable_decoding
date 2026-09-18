@@ -1,6 +1,8 @@
+import json
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -27,7 +29,10 @@ from review_utils import (
     reviewed_error_summary,
     upsert_review,
 )
-from visualization import matrix_cell_color, group_y_ranges, sample_signal_figure, signal_groups
+from visualization import (
+    matrix_cell_color, group_y_ranges, sample_signal_figure, signal_groups,
+    static_confusion_matrix_figure, stress_metric_card_html, stress_results_table_html,
+)
 
 
 def centered_table(dataframe):
@@ -124,6 +129,27 @@ st.markdown(
         background: #f8fafc;
         font-weight: 650;
     }
+    .stress-metric-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        margin: 0.75rem 0 1rem;
+        color: #0f172a;
+        background: #ffffff;
+    }
+    .stress-original {
+        background: #eaf2ff !important;
+        color: #0f172a !important;
+        font-weight: 750;
+    }
+    .stress-original.stress-metric-card {
+        border: 1px solid #a9c8f5;
+        border-left: 5px solid #0C54AC;
+    }
+    .stress-card-title { font-size: 1.15rem; margin-bottom: 0.65rem; }
+    .stress-metric-row { display: flex; justify-content: space-between; padding: 0.35rem 0; }
+    .stress-chart-label { padding: 0.65rem 1rem; border-radius: 8px; color: #0f172a; }
+    tr.stress-original td { font-weight: 750; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -445,4 +471,119 @@ else:
                 }
             )
         )
+
+
+STRESS_RESULTS_DIR = Path(__file__).resolve().parents[1] / "outputs/axis_permutation_stress_test"
+
+
+@st.cache_data(show_spinner=False)
+def load_axis_stress_results(summary_version, matrix_version):
+    report = json.loads((STRESS_RESULTS_DIR / "summary.json").read_text(encoding="utf-8"))
+    with np.load(STRESS_RESULTS_DIR / "axis_permutations.npz", allow_pickle=False) as artifact:
+        permutations = artifact["permutations"].tolist()
+        matrices = artifact["confusion_matrices"]
+        if (
+            permutations != ["xyz", "xzy", "yxz", "yzx", "zxy", "zyx"]
+            or permutations != [row["permutation"] for row in report["results"]]
+            or artifact["class_names"].tolist() != report["class_names"]
+            or str(artifact["model_run_id"]) != report["model_run_id"]
+            or str(artifact["checkpoint_sha256"]) != report["checkpoint_sha256"]
+            or matrices.shape != (6, len(report["class_names"]), len(report["class_names"]))
+        ):
+            raise ValueError("离线指标与混淆矩阵的排列、类别或模型来源不一致。")
+    return report, matrices
+
+
+def clear_axis_preview():
+    st.session_state["stress_view_mode"] = None
+
+
+def render_axis_stress_test():
+    with st.container(border=True):
+        st.subheader("Axis Permutation Stress Test")
+        st.caption(
+            "body_acc、body_gyro、total_acc 三组三轴同步换轴。所有结果均为离线预计算；"
+            "实验范围为有限轴排列扰动。"
+        )
+        summary_path = STRESS_RESULTS_DIR / "summary.json"
+        matrix_path = STRESS_RESULTS_DIR / "axis_permutations.npz"
+        if not summary_path.is_file() or not matrix_path.is_file():
+            st.info("尚无换轴评估结果，请先运行 `python src/evaluate_permutations.py`。")
+            return
+        try:
+            report, matrices = load_axis_stress_results(
+                summary_path.stat().st_mtime_ns, matrix_path.stat().st_mtime_ns,
+            )
+        except (OSError, ValueError, KeyError) as error:
+            st.error(f"无法读取离线换轴结果：{error}")
+            return
+        rows = report["results"]
+        permutations = [row["permutation"] for row in rows]
+        st.caption(
+            f"模型 run：{report['model_run_id']} · {report['sample_count']} 个测试样本。"
+            "本卡片 Original 是该模型的 xyz 结果，与顶部历史评估属于不同模型 run。"
+        )
+        selected = st.selectbox(
+            "轴排列", permutations, key="stress_permutation", on_change=clear_axis_preview,
+            format_func=lambda p: "(x, y, z) — Original" if p == "xyz" else f"({', '.join(p)})",
+        )
+        selected_button, all_button = st.columns(2)
+        if selected_button.button("Evaluate Selected · 查看所选", key="stress_selected", use_container_width=True):
+            st.session_state["stress_view_mode"] = "selected"
+        if all_button.button("Evaluate All · 预览全部", key="stress_all", use_container_width=True):
+            st.session_state["stress_view_mode"] = "all"
+        mode = st.session_state.get("stress_view_mode")
+        if mode is None:
+            st.info("选择一种排列后查看所选结果，或点击 Evaluate All 预览六种结果。")
+            return
+
+        max_count = max(int(matrices.max()), 1)
+        if mode == "selected":
+            index = permutations.index(selected)
+            original_column, transformed_column = st.columns(2)
+            original_column.markdown(stress_metric_card_html(rows[0], original=True), unsafe_allow_html=True)
+            transformed_column.markdown(stress_metric_card_html(rows[index]), unsafe_allow_html=True)
+            st.markdown(f"**{'-'.join(selected)} permutation · 混淆矩阵**")
+            _, matrix_column, _ = st.columns([1, 4, 1])
+            with matrix_column:
+                st.plotly_chart(
+                    static_confusion_matrix_figure(matrices[index], report["class_names"], max_count),
+                    use_container_width=True, key="stress_single_matrix",
+                    config={"staticPlot": True, "displayModeBar": False},
+                )
+        else:
+            st.markdown(stress_results_table_html(rows), unsafe_allow_html=True)
+            summary = report["summary"]
+            st.caption("以下汇总仅包含五种非 Original 排列；下降幅度以 Original 为参考，单位为 pp。")
+            mean_column, worst_column = st.columns(2)
+            for column, prefix, label in (
+                (mean_column, "mean_transformed", "非 Original 平均"),
+                (worst_column, "worst_case", "最差情况"),
+            ):
+                with column:
+                    st.markdown(f"**{label}**")
+                    st.metric("Accuracy", f"{summary[prefix + '_accuracy']:.2%}")
+                    st.metric("Macro-F1", f"{summary[prefix + '_macro_f1']:.2%}")
+                    drop_prefix = "mean" if prefix == "mean_transformed" else "worst_case"
+                    st.caption(
+                        f"Accuracy 下降 {summary[drop_prefix + '_accuracy_drop_pp']:.2f} pp · "
+                        f"Macro-F1 下降 {summary[drop_prefix + '_macro_f1_drop_pp']:.2f} pp"
+                    )
+            for start in (0, 2, 4):
+                for index, column in zip(range(start, start + 2), st.columns(2)):
+                    with column:
+                        label = "Original · xyz" if index == 0 else f"{'-'.join(permutations[index])} permutation"
+                        css_class = "stress-chart-label stress-original" if index == 0 else "stress-chart-label"
+                        st.markdown(f'<div class="{css_class}"><strong>{label}</strong></div>', unsafe_allow_html=True)
+                        st.plotly_chart(
+                            static_confusion_matrix_figure(
+                                matrices[index], report["class_names"], max_count, show_colorbar=False,
+                            ),
+                            use_container_width=True, key=f"stress_all_matrix_{index}",
+                            config={"staticPlot": True, "displayModeBar": False},
+                        )
+        st.caption("混淆矩阵：纵轴 Truth，横轴 Prediction；数字为样本数，所有图使用相同色阶。")
+
+
+render_axis_stress_test()
 
