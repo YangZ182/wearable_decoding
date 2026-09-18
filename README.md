@@ -79,6 +79,18 @@ cnn1d_test_predictions.npz
 model_state_dict.pt
 ```
 
+## 离线坐标轴排列评估
+
+六种排列的预计算结果位于 `outputs/axis_permutation_stress_test/`：`metrics.csv` 保存指标和相对 xyz 的 pp 差值，`axis_permutations.npz` 保存预测与六个混淆矩阵，`summary.json` 保存来源和五种非 xyz 排列的均值、最差值及下降幅度。三组 `body_acc`、`body_gyro`、`total_acc` 同步换轴；仅作有限轴排列扰动，不训练模型、不模拟任意 3D 旋转。
+
+本机生成这些结果的命令：
+
+```powershell
+& C:/Users/win11/.conda/envs/wearable/python.exe -s -B -X utf8 src/evaluate_permutations.py
+```
+
+结果目录已存在时拒绝覆盖；重新评估可指定 `--output-dir outputs/axis_permutation_stress_test_new`。使用的是现有两层 CNN checkpoint `cnn1d_retrain_20260911T110414Z`；其 xyz Accuracy 为 89.45%，不是缺少 checkpoint 的页面历史 baseline（88.43%）。
+
 ## 人工反馈输出
 
 仓库附带的 baseline 人工审阅结果位于：

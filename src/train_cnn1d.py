@@ -10,6 +10,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 from torch.utils.data import DataLoader, TensorDataset
 
 from data_loader import CHANNEL_NAMES, load_activity_labels, load_uci_har
+from inference import make_test_loader, predict
 from model import ActivityCNN
 
 
@@ -36,13 +37,8 @@ def main():
         torch.tensor(x_train, dtype=torch.float32),
         torch.tensor(y_train, dtype=torch.long),
     )
-    test_dataset = TensorDataset(
-        torch.tensor(x_test, dtype=torch.float32),
-        torch.tensor(y_test, dtype=torch.long),
-    )
-
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+    test_loader = make_test_loader(x_test, y_test)
 
     model = ActivityCNN()
     criterion = nn.CrossEntropyLoss()
@@ -66,29 +62,8 @@ def main():
         training_log.append({"epoch": epoch + 1, "loss": average_loss})
         print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {average_loss:.4f}")
 
-    model.eval()
-    correct = 0
-    total = 0
-    all_predictions = []
-    all_labels = []
-    all_probabilities = []
-
-    with torch.no_grad():
-        for x_batch, y_batch in test_loader:
-            outputs = model(x_batch)
-            probabilities = torch.softmax(outputs, dim=1)
-            predictions = torch.argmax(outputs, dim=1)
-
-            correct += (predictions == y_batch).sum().item()
-            total += y_batch.size(0)
-            all_predictions.extend(predictions.cpu().numpy())
-            all_labels.extend(y_batch.cpu().numpy())
-            all_probabilities.append(probabilities.cpu().numpy())
-
-    accuracy = correct / total
-    all_predictions = np.array(all_predictions)
-    all_labels = np.array(all_labels)
-    all_probabilities = np.concatenate(all_probabilities, axis=0)
+    all_labels, all_predictions, all_probabilities = predict(model, test_loader)
+    accuracy = float((all_predictions == all_labels).mean())
     class_names = load_activity_labels()
     print(f"Test Accuracy: {accuracy:.4f}")
     cm = confusion_matrix(all_labels, all_predictions)
