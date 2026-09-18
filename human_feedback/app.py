@@ -500,7 +500,7 @@ def clear_axis_preview():
 
 def render_axis_stress_test():
     with st.container(border=True):
-        st.subheader("Axis Permutation Stress Test")
+        st.subheader("传感器坐标轴排列压力测试")
         summary_path = STRESS_RESULTS_DIR / "summary.json"
         matrix_path = STRESS_RESULTS_DIR / "axis_permutations.npz"
         if not summary_path.is_file() or not matrix_path.is_file():
