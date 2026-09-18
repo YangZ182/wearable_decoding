@@ -501,10 +501,6 @@ def clear_axis_preview():
 def render_axis_stress_test():
     with st.container(border=True):
         st.subheader("Axis Permutation Stress Test")
-        st.caption(
-            "body_acc、body_gyro、total_acc 三组三轴同步换轴。所有结果均为离线预计算；"
-            "实验范围为有限轴排列扰动。"
-        )
         summary_path = STRESS_RESULTS_DIR / "summary.json"
         matrix_path = STRESS_RESULTS_DIR / "axis_permutations.npz"
         if not summary_path.is_file() or not matrix_path.is_file():
@@ -519,10 +515,6 @@ def render_axis_stress_test():
             return
         rows = report["results"]
         permutations = [row["permutation"] for row in rows]
-        st.caption(
-            f"模型 run：{report['model_run_id']} · {report['sample_count']} 个测试样本。"
-            "本卡片 Original 是该模型的 xyz 结果，与顶部历史评估属于不同模型 run。"
-        )
         selected = st.selectbox(
             "轴排列", permutations, key="stress_permutation", on_change=clear_axis_preview,
             format_func=lambda p: "(x, y, z) — Original" if p == "xyz" else f"({', '.join(p)})",
